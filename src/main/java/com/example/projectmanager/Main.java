@@ -7,35 +7,25 @@ import com.example.projectmanager.dao.WorkerDAO;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.sql.Date;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class Main {
-    static void addTask(TaskDAO taskDAO){
-        Scanner scanner = new Scanner(System.in);
-        int n = scanner.nextInt();
-        for (int i=0;i<n;i++){
-            System.out.print("Task description: ");
-            String taskDescription = scanner.next();
-            System.out.print("Task costs: ");
-            int taskCosts = scanner.nextInt();
-            String stringDate = scanner.next();
-            Date date = Date.valueOf(stringDate);
-            Task task = new Task(taskDescription, taskCosts, date);
-            taskDAO.setInfo(task);
-        }
+    private static final AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
+    private static final TaskDAO taskDAO = context.getBean(TaskDAO.class);
+    private static final WorkerDAO workerDAO = context.getBean(WorkerDAO.class);
+    private static final ResultDAO resultDAO = context.getBean(ResultDAO.class);
 
+    static void addTask(String taskDescription, int taskCosts, Date date){
+        Task task = new Task(taskDescription, taskCosts, date);
+        taskDAO.setInfo(task);
     }
-    static void addWorker(WorkerDAO workerDAO){
-        Scanner scanner = new Scanner(System.in);
-        int n = scanner.nextInt();
-        for (int i=0;i<n;i++){
-            System.out.print("Worker name: ");
-            String name = scanner.next();
-            Worker worker = new Worker(name);
-            workerDAO.setInfo(worker);
-        }
+    static void addWorker(String name){
+        Worker worker = new Worker(name);
+        workerDAO.setInfo(worker);
     }
-    static void organiser(WorkerDAO workerDAO, TaskDAO taskDAO){
+    static void organiser(){
         List<Worker> workerList = (ArrayList) workerDAO.getAllInfo();
         List<Task> taskList = (ArrayList) taskDAO.getAllInfo();
         Collections.sort(taskList, new SortByCosts());
@@ -45,11 +35,8 @@ public class Main {
             workerList.get(0).setLoad(workerList.get(0).getLoad()+task.getTaskCosts());
             taskDAO.updateInfo(task);
         }
-        for (Worker worker : workerList){
-            System.out.println(worker.getName() + ' ' + worker.getLoad());
-        }
     }
-    static void doResult(ResultDAO resultDAO, WorkerDAO workerDAO, TaskDAO taskDAO){
+    static void doResult(){
         resultDAO.deleteAllInfo();
         List<Task> taskList = taskDAO.getAllInfo();
         for (Task task : taskList){
@@ -60,43 +47,56 @@ public class Main {
             result.setName(workerDAO.getInfo(task.getWorkerId()).getName());
             resultDAO.setInfo(result);
         }
-        java.util.Date date = new java.util.Date();
-        Date sqlDate = new Date(date.getTime());
-        List<Task> schedule = workerDAO.getInfo(1).createSchedule(sqlDate, resultDAO);
-        for (int i = 1; i <= schedule.size(); i++) {
-            System.out.print(i);
+    }
+    static void makeSchedule(int id, java.util.Date date){
+
+        List<Task> schedule = workerDAO.getInfo(id).createSchedule(date, resultDAO);
+        for (int i = 0; i < schedule.size(); i++) {
+            System.out.print(new Date((long)i*86400000 + date.getTime()));
             System.out.print(' ');
-            System.out.println(schedule.get(i - 1));
+            System.out.println(schedule.get(i));
         }
     }
-    public static void main(String[] args) {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
-        TaskDAO taskDAO = context.getBean(TaskDAO.class);
-        WorkerDAO workerDAO = context.getBean(WorkerDAO.class);
-        ResultDAO resultDAO = context.getBean(ResultDAO.class);
+    public static void main(String[] args) throws ParseException {
+
         Scanner scanner = new Scanner(System.in);
         boolean isRunning = true;
         while (isRunning){
-            System.out.println("0 - close application, 1 - add new workers, 2 - add new tasks, 3 - distribution, 4 - update result table");
+            System.out.println("0 - close application, 1 - add new worker, 2 - add new task, 3 - distribution, " +
+                    "4 - update result table, 5 - make a schedule for worker");
             int command = scanner.nextInt();
             switch (command){
                 case (0):
                     isRunning = false;
                     break;
                 case (1):
-                    addWorker(workerDAO);
+                    System.out.print("Worker name: ");
+                    String name = scanner.next();
+                    addWorker(name);
                     break;
                 case (2):
-                    addTask(taskDAO);
+                    System.out.print("Task description: ");
+                    String taskDescription = scanner.next();
+                    System.out.print("Task costs: ");
+                    int taskCosts = scanner.nextInt();
+                    System.out.print("Enter task's deadline like 'yyyy-mm-dd': ");
+                    String stringDate = scanner.next();
+                    Date date = Date.valueOf(stringDate);
+                    addTask(taskDescription, taskCosts, date);
                     break;
                 case (3):
-                    organiser(workerDAO, taskDAO);
+                    organiser();
                     break;
                 case (4):
-                    doResult(resultDAO, workerDAO, taskDAO);
+                    doResult();
                     break;
                 case (5):
-                    System.out.println(new Date(new java.util.Date().getTime()).getTime());
+                    System.out.print("Enter worker id: ");
+                    int id = scanner.nextInt();
+                    System.out.print("Enter today's date like 'yyyy-mm-dd': ");
+                    stringDate = scanner.next();
+                    date = Date.valueOf(stringDate);
+                    makeSchedule(id, date);
             }
         }
     }

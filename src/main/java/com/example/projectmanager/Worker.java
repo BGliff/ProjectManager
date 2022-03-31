@@ -2,9 +2,8 @@ package com.example.projectmanager;
 
 import com.example.projectmanager.dao.ResultDAO;
 
-import java.sql.Date;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 public class Worker {
@@ -58,35 +57,32 @@ public class Worker {
     public List<Task> createSchedule(Date date, ResultDAO resultDAO) {
         List<Task> taskList = resultDAO.getWorkerTasks(name);
         taskList.sort(new SortByDeadline());
-        int timeLine = (int)(taskList.get(taskList.size() - 1).getDeadline().getTime() - date.getTime()) / 86400000 + 1;
+        List<Task> tasksSortedByDeadline = taskList;
+        int timeLine = (int)((taskList.get(taskList.size() - 1).getDeadline().getTime() - date.getTime()) / 86400000.0 + 1);
         List<Task> schedule = new ArrayList<>();
         for (int i = 0; i < timeLine; i++)
-            schedule.add(i, new Task());
+            schedule.add(new Task());
         int sumCosts = 0;
         for (Task task : taskList){
             sumCosts += task.getTaskCosts();
-            schedule.set((int)(task.getDeadline().getTime() - date.getTime()) / 86400000, new Deadline());
+            schedule.set((int)((task.getDeadline().getTime() - date.getTime()) / 86400000), new Deadline());
         }
         double minTime = (double) timeLine / sumCosts;
-        int i = 0;
-        while (i < schedule.size()){
+        for (Task task : taskList)
+            task.setTaskCosts((int)(task.getTaskCosts()*minTime));
 
-            while (!(schedule.get(i) instanceof Deadline)){
-
+        int nextDeadlineTaskPointer;
+        for (int i = 0; i < schedule.size(); i++){
+            for (Task task : taskList)
+                task.setPriority((double)task.getTaskCosts()/((double)(task.getDeadline().getTime()-date.getTime()) / 86400000 - i));
+            taskList.sort(new SortByPriority());
+            if (schedule.get(i) instanceof Deadline){
+                schedule.set(i, taskList.get(taskList.size()-1));
+                taskList.remove(taskList.size()-1);
+            }else {
+                schedule.set(i, taskList.get(taskList.size() - 1));
             }
         }
-//        for (int n = 0; n < taskList.size(); n++)
-//            for (int k = n; k < taskList.size(); k++){
-//                for (int j = 0; j < taskList.get(k).getTaskCosts()*minTime; j++){
-//                    if (schedule.get(i) instanceof Deadline)
-//                        break;
-//                    schedule.set(i, taskList.get(k));
-//                    i++;
-//                }
-//                if (schedule.get(i) instanceof Deadline)
-//                    schedule.set(i, taskList.get(k));
-//                    break;
-//            }
         return schedule;
     }
 }

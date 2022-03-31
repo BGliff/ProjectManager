@@ -1,7 +1,7 @@
 package com.example.projectmanager;
 
 import java.sql.Date;
-import java.util.*;
+
 
 public class Task {
     private int taskId;
@@ -9,6 +9,15 @@ public class Task {
     private int taskCosts;
     private int workerId;
     private Date deadline;
+    private double priority;
+
+    public double getPriority() {
+        return priority;
+    }
+
+    public void setPriority(double priority) {
+        this.priority = priority;
+    }
 
     public Date getDeadline() {
         return deadline;
