@@ -7,8 +7,6 @@ import com.example.projectmanager.dao.WorkerDAO;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.sql.Date;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class Main {
@@ -26,11 +24,11 @@ public class Main {
         workerDAO.setInfo(worker);
     }
     static void organiser(){
-        List<Worker> workerList = (ArrayList) workerDAO.getAllInfo();
-        List<Task> taskList = (ArrayList) taskDAO.getAllInfo();
-        Collections.sort(taskList, new SortByCosts());
+        List<Worker> workerList = workerDAO.getAllInfo();
+        List<Task> taskList = taskDAO.getAllInfo();
+        taskList.sort(new SortByCosts());
         for (Task task : taskList) {
-            Collections.sort(workerList, new SortByLoad());
+            workerList.sort(new SortByLoad());
             task.setWorkerId(workerList.get(0).getId());
             workerList.get(0).setLoad(workerList.get(0).getLoad()+task.getTaskCosts());
             taskDAO.updateInfo(task);
@@ -57,7 +55,7 @@ public class Main {
             System.out.println(schedule.get(i));
         }
     }
-    public static void main(String[] args) throws ParseException {
+    public static void main(String[] args){
 
         Scanner scanner = new Scanner(System.in);
         boolean isRunning = true;
@@ -97,6 +95,7 @@ public class Main {
                     stringDate = scanner.next();
                     date = Date.valueOf(stringDate);
                     makeSchedule(id, date);
+                    break;
             }
         }
     }

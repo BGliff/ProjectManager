@@ -10,6 +10,15 @@ public class Task {
     private int workerId;
     private Date deadline;
     private double priority;
+    private int daysCount = 0;
+
+    public int getDaysCount() {
+        return daysCount;
+    }
+
+    public void setDaysCount(int daysCount) {
+        this.daysCount = daysCount;
+    }
 
     public double getPriority() {
         return priority;

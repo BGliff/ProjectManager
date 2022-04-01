@@ -57,7 +57,7 @@ public class Worker {
     public List<Task> createSchedule(Date date, ResultDAO resultDAO) {
         List<Task> taskList = resultDAO.getWorkerTasks(name);
         taskList.sort(new SortByDeadline());
-        List<Task> tasksSortedByDeadline = taskList;
+        List<Task> tasksSortedByDeadline = new ArrayList<>(taskList);
         int timeLine = (int)((taskList.get(taskList.size() - 1).getDeadline().getTime() - date.getTime()) / 86400000.0 + 1);
         List<Task> schedule = new ArrayList<>();
         for (int i = 0; i < timeLine; i++)
@@ -69,19 +69,35 @@ public class Worker {
         }
         double minTime = (double) timeLine / sumCosts;
         for (Task task : taskList)
-            task.setTaskCosts((int)(task.getTaskCosts()*minTime));
+            task.setDaysCount((int)(task.getTaskCosts()*minTime));
 
-        int nextDeadlineTaskPointer;
-        for (int i = 0; i < schedule.size(); i++){
-            for (Task task : taskList)
-                task.setPriority((double)task.getTaskCosts()/((double)(task.getDeadline().getTime()-date.getTime()) / 86400000 - i));
-            taskList.sort(new SortByPriority());
-            if (schedule.get(i) instanceof Deadline){
-                schedule.set(i, taskList.get(taskList.size()-1));
-                taskList.remove(taskList.size()-1);
-            }else {
-                schedule.set(i, taskList.get(taskList.size() - 1));
+        int nextDeadlineTaskPointer = 0;
+        int i = 0;
+        int j = 0;
+        while (i < schedule.size()){
+            while (j < tasksSortedByDeadline.get(nextDeadlineTaskPointer).getTaskCosts()*minTime && !(schedule.get(i) instanceof Deadline)) {
+                schedule.set(i, tasksSortedByDeadline.get(nextDeadlineTaskPointer));
+                j++;
+                i++;
             }
+            taskList.remove(tasksSortedByDeadline.get(nextDeadlineTaskPointer));
+            for (Task task : taskList)
+                task.setPriority((double)task.getTaskCosts()/((double)(task.getDeadline().getTime()-date.getTime()) / 86400000 - i - 1));
+            taskList.sort(new SortByPriority());
+            if (taskList.size() < 1)
+                break;
+            if (schedule.get(i) instanceof Deadline){
+                j = 0;
+                nextDeadlineTaskPointer++;
+                i++;
+            }else {
+                j = timeLine;
+            }
+            schedule.set(i, taskList.get(taskList.size()-1));
+            taskList.get(taskList.size()-1).setDaysCount(taskList.get(taskList.size()-1).getDaysCount()-1);
+            if (taskList.get(taskList.size()-1).getDaysCount() == 0)
+                taskList.remove(taskList.size()-1);
+            i++;
         }
         return schedule;
     }
